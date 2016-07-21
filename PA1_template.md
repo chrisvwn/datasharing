@@ -1,49 +1,43 @@
----
-title: "Activity Analysis"
-author: "Chris Njuguna"
-date: "July 21, 2016"
-output: html_document
----
+# Activity Analysis
+Chris Njuguna  
+July 21, 2016  
 
 ###Read in the data and convert the dates from characters to date objects
 
-```{r}
-library(ggplot2)
-setwd("/media/NewVolume/Coursera/JHUDataScienceSpecialization/05_ReproducibleResearch/activity/datasharing")
 
-#Load the data
-activity <- read.csv("activity.csv", sep=",", na.strings = "NA", header = TRUE)
-
-#convert date strings into dates
-activity$date <- as.Date(activity$date)
-
-```
 
 ###What is mean total number of steps taken per day?
 
-```{r}
+
+```r
 #calculate the mean number of steps taken for each day
 mean_daily_steps <- tapply(X=activity$steps, INDEX = activity$date, FUN=mean, na.rm=TRUE)
-
 ```
 
 A histogram of the number of steps taken each day is shown below
 
-```{r}
-hist(mean_daily_steps,breaks = length(mean_daily_steps))
 
+```r
+hist(mean_daily_steps)
 ```
 
-The mean number of total steps per day is `r mean(mean_daily_steps, na.rm=TRUE)` while the median is `r median(mean_daily_steps, na.rm=TRUE)`
+![](figure/unnamed-chunk-2-1.png)<!-- -->
+
+The mean number of total steps per day is 37.3825996 while the median is 37.3784722
 
 ###What is the average daily activity pattern?
 
 A timeseries plot of the average of the 5-minute intervals across all days
 
-```{r}
+
+```r
 mean_5min_intervals <- tapply(X=activity$steps, INDEX = activity$interval, FUN=mean, na.rm=TRUE)
 plot(seq(0, 1435, by = 5), mean_5min_intervals, type="l", xlab = "5 min intervals", ylab = "Mean steps")
+```
 
+![](figure/unnamed-chunk-3-1.png)<!-- -->
+
+```r
 #calculate the max steps
 max_mean_5min_intervals <- max(mean_5min_intervals,na.rm=TRUE)
 
@@ -51,11 +45,12 @@ max_mean_5min_intervals <- max(mean_5min_intervals,na.rm=TRUE)
 idx_max_mean_5min_intervals <- which(mean_5min_intervals == max_mean_5min_intervals)
 max_intvl <- idx_max_mean_5min_intervals*5
 ```
-The 5 min interval with the highest number of steps is `r max_intvl` with `r max_mean_5min_intervals` steps.
+The 5 min interval with the highest number of steps is 520 with 206.1698113 steps.
 
 ###Imputing missing values
 
-```{r}
+
+```r
 num_NA <- sum(is.na(activity))
 
 #calculate the mean across all steps
@@ -68,23 +63,25 @@ activity_noNA <- activity
 activity_noNA[is.na(activity_noNA$steps),"steps"] <- mean_all_intervals
 
 mean_5min_intervals_noNA <- tapply(X=activity_noNA$steps, INDEX = activity_noNA$interval, FUN=mean, na.rm=TRUE)
-
 ```
 
 A histogram of the number of steps taken each day with imputed data is shown below
 
-```{r}
 
-hist(mean_5min_intervals_noNA, breaks = length(mean_5min_intervals_noNA))
-
+```r
+hist(mean_5min_intervals_noNA)
 ```
 
-There is a slight change in the amounts but the distribution stays pretty much the same. Imputing data reduces the number of buckets eliminating the NA bin and adds the values to existing bins
+![](figure/unnamed-chunk-5-1.png)<!-- -->
 
-The mean number of total steps per day is `r mean(mean_5min_intervals_noNA, na.rm=TRUE)` while the median is `r median(mean_5min_intervals_noNA, na.rm=TRUE)`
+There is a great change in the distribution of the steps. The imputed data displays a strong right skew while the data with NAs is almost normally distributed.
+
+The mean number of total steps per day is 37.3825996 while the median is 34.5419803
 
 ###Are there differences in activity patterns between weekdays and weekends?
-```{r}
+
+
+```r
 activity$wkday <- sapply(weekdays(activity$date, abbreviate = TRUE), FUN = function(x) if (x == "Sat" | x == "Sun") {"weekend"} else {"weekday"})
 
 activity$wkday <- as.factor(activity$wkday)
@@ -102,11 +99,15 @@ weekend_means <- tapply(X=activity[wkends,]$steps, INDEX = activity[wkends,]$int
 
 par(mfrow=c(1,2))
 
+rng <- range(weekday_means, weekend_means)
 
-plot(seq(0, 1435, by = 5), weekday_means, type="l", xlab = "5 min intervals", ylab = "Mean steps", sub = "weekday")
+plot(seq(0, 1435, by = 5), weekday_means, type="l", ylim=rng, xlab = "5 min intervals", ylab = "Mean steps", sub = "weekday")
 
-plot(seq(0, 1435, by = 5), weekend_means, type="l", xlab = "5 min intervals", ylab = "Mean steps", sub = "weekend")
+plot(seq(0, 1435, by = 5), weekend_means, type="l", ylim=rng, xlab = "5 min intervals", ylab = "Mean steps", sub = "weekend")
 
-title(main="Average steps per interval")
-
+title(main="Average steps per interval", outer = TRUE)
 ```
+
+![](figure/unnamed-chunk-6-1.png)<!-- -->
+
+There are differences between weekday and weekend activity. There is a slower start to activity on the weekend which culminates in higher volumes in the middle of the day than weekdays. Weekdays however have a higher maximum number of steps early in the day.

@@ -2,16 +2,17 @@
 title: "Activity Analysis"
 author: "Chris Njuguna"
 date: "July 21, 2016"
-output: html_document
+output: 
+  html_document: 
+    keep_md: yes
+    self_contained: no
 ---
 
 ###Read in the data and convert the dates from characters to date objects
 
 ```{r global_options, include=FALSE}
 knitr::opts_chunk$set(fig.width=12, fig.height=8, fig.path='figure/',
-                      echo=TRUE, warning=FALSE, message=FALSE)
-library(ggplot2)
-setwd("/media/NewVolume/Coursera/JHUDataScienceSpecialization/05_ReproducibleResearch/activity/datasharing")
+                      echo=TRUE, warning=FALSE, message=FALSE, cache=FALSE, base64_images=FALSE)
 
 #Load the data
 activity <- read.csv("activity.csv", sep=",", na.strings = "NA", header = TRUE)
@@ -32,7 +33,7 @@ mean_daily_steps <- tapply(X=activity$steps, INDEX = activity$date, FUN=mean, na
 A histogram of the number of steps taken each day is shown below
 
 ```{r}
-hist(mean_daily_steps,breaks = length(mean_daily_steps))
+hist(mean_daily_steps)
 
 ```
 
@@ -77,15 +78,16 @@ A histogram of the number of steps taken each day with imputed data is shown bel
 
 ```{r}
 
-hist(mean_5min_intervals_noNA, breaks = length(mean_5min_intervals_noNA))
+hist(mean_5min_intervals_noNA)
 
 ```
 
-There is a slight change in the amounts but the distribution stays pretty much the same. Imputing data reduces the number of buckets eliminating the NA bin and adds the values to existing bins
+There is a great change in the distribution of the steps. The imputed data displays a strong right skew while the data with NAs is almost normally distributed.
 
 The mean number of total steps per day is `r mean(mean_5min_intervals_noNA, na.rm=TRUE)` while the median is `r median(mean_5min_intervals_noNA, na.rm=TRUE)`
 
 ###Are there differences in activity patterns between weekdays and weekends?
+
 ```{r}
 activity$wkday <- sapply(weekdays(activity$date, abbreviate = TRUE), FUN = function(x) if (x == "Sat" | x == "Sun") {"weekend"} else {"weekday"})
 
@@ -104,11 +106,14 @@ weekend_means <- tapply(X=activity[wkends,]$steps, INDEX = activity[wkends,]$int
 
 par(mfrow=c(1,2))
 
+rng <- range(weekday_means, weekend_means)
 
-plot(seq(0, 1435, by = 5), weekday_means, type="l", xlab = "5 min intervals", ylab = "Mean steps", sub = "weekday")
+plot(seq(0, 1435, by = 5), weekday_means, type="l", ylim=rng, xlab = "5 min intervals", ylab = "Mean steps", sub = "weekday")
 
-plot(seq(0, 1435, by = 5), weekend_means, type="l", xlab = "5 min intervals", ylab = "Mean steps", sub = "weekend")
+plot(seq(0, 1435, by = 5), weekend_means, type="l", ylim=rng, xlab = "5 min intervals", ylab = "Mean steps", sub = "weekend")
 
-title(main="Average steps per interval")
+title(main="Average steps per interval", outer = TRUE)
 
 ```
+
+There are differences between weekday and weekend activity. There is a slower start to activity on the weekend which culminates in higher volumes in the middle of the day than weekdays. Weekdays however have a higher maximum number of steps early in the day.
