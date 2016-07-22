@@ -131,45 +131,58 @@ $(document).ready(function () {
 <div id="what-is-mean-total-number-of-steps-taken-per-day" class="section level3">
 <h3>What is mean total number of steps taken per day?</h3>
 <pre class="r"><code>#calculate the mean number of steps taken for each day
-mean_daily_steps &lt;- tapply(X=activity$steps, INDEX = activity$date, FUN=mean, na.rm=TRUE)</code></pre>
+#mean_daily_steps &lt;- tapply(X=activity$steps, INDEX = activity$date, FUN=mean, na.rm=TRUE)
+mean_daily_steps &lt;- aggregate(steps ~ date, data=activity, sum, na.rm=TRUE)</code></pre>
 <p>A histogram of the number of steps taken each day is shown below</p>
-<pre class="r"><code>hist(mean_daily_steps)</code></pre>
+<pre class="r"><code>hist(mean_daily_steps$steps, xlab = &quot;Total daily steps taken&quot;)</code></pre>
 <p><img src="figure/unnamed-chunk-2-1.png" /><!-- --></p>
-<p>The mean number of total steps per day is 37.3825996 while the median is 37.3784722</p>
+<p>The mean number of total steps per day is 10766 while the median is 10765</p>
 </div>
 <div id="what-is-the-average-daily-activity-pattern" class="section level3">
 <h3>What is the average daily activity pattern?</h3>
 <p>A timeseries plot of the average of the 5-minute intervals across all days</p>
-<pre class="r"><code>mean_5min_intervals &lt;- tapply(X=activity$steps, INDEX = activity$interval, FUN=mean, na.rm=TRUE)
-plot(seq(0, 1435, by = 5), mean_5min_intervals, type=&quot;l&quot;, xlab = &quot;5 min intervals&quot;, ylab = &quot;Mean steps&quot;)</code></pre>
-<p><img src="figure/unnamed-chunk-3-1.png" /><!-- --></p>
-<pre class="r"><code>#calculate the max steps
-max_mean_5min_intervals &lt;- max(mean_5min_intervals,na.rm=TRUE)
+<pre class="r"><code>#mean_5min_intervals &lt;- tapply(X=activity$steps, INDEX = activity$interval, FUN=mean, na.rm=TRUE)
+#plot(seq(0, 1435, by = 5), mean_5min_intervals, type=&quot;l&quot;, xlab = &quot;5 min intervals&quot;, ylab = &quot;Mean steps&quot;)
+
+mean_5min_intervals &lt;- aggregate(steps ~ interval, data = activity, FUN = mean, na.rm=TRUE)
+
+plot(steps ~ interval, data = mean_5min_intervals, type=&quot;l&quot;)
+
+#calculate the max steps
+max_mean_5min_intervals &lt;- max(mean_5min_intervals$steps,na.rm=TRUE)
 
 #find the index with the highest number of steps
-idx_max_mean_5min_intervals &lt;- which(mean_5min_intervals == max_mean_5min_intervals)
-max_intvl &lt;- idx_max_mean_5min_intervals*5</code></pre>
-<p>The 5 min interval with the highest number of steps is 520 with 206.1698113 steps.</p>
+idx_max_mean_5min_intervals &lt;- which(mean_5min_intervals$steps == max_mean_5min_intervals)
+max_intvl &lt;- mean_5min_intervals[idx_max_mean_5min_intervals,]$interval
+
+abline(v=max_intvl, col=&quot;red&quot;, lwd=2)
+text(x=max_intvl+600,y=max_mean_5min_intervals, paste(&quot;intvl:&quot;,max_intvl, &quot;steps:&quot;, round(max_mean_5min_intervals), sep=&quot; &quot;))</code></pre>
+<p><img src="figure/unnamed-chunk-3-1.png" /><!-- --></p>
+<p>The 5 min interval with the highest number of steps is 835 with 206.1698113 steps.</p>
 </div>
 <div id="imputing-missing-values" class="section level3">
 <h3>Imputing missing values</h3>
-<pre class="r"><code>num_NA &lt;- sum(is.na(activity))
+<pre class="r"><code>num_NA &lt;- sum(is.na(activity$steps))
 
-#calculate the mean across all steps
-mean_all_intervals &lt;- mean(activity$steps, na.rm=TRUE)
+#calculate the mean steps for each interval
+mean_all_intervals &lt;- aggregate(steps ~ interval, data=activity, FUN=mean, na.rm=TRUE)
 
 #copy the activity dataset
 activity_noNA &lt;- activity
 
-#replace all NAs with the mean across all steps
-activity_noNA[is.na(activity_noNA$steps),&quot;steps&quot;] &lt;- mean_all_intervals
+intervals_NA &lt;- activity_noNA[is.na(activity_noNA$steps),&quot;interval&quot;]
 
-mean_5min_intervals_noNA &lt;- tapply(X=activity_noNA$steps, INDEX = activity_noNA$interval, FUN=mean, na.rm=TRUE)</code></pre>
+#replace all NAs with the mean for that 5 min interval
+ activity_noNA[is.na(activity_noNA$steps),&quot;steps&quot;]  &lt;- sapply(intervals_NA, FUN = function(x) { mean_all_intervals[mean_all_intervals$interval == x, &quot;steps&quot;]})
+
+#mean_5min_intervals_noNA &lt;- tapply(X=activity_noNA$steps, INDEX = activity_noNA$interval, FUN=mean, na.rm=TRUE)
+
+mean_5min_intervals_noNA &lt;- aggregate(steps ~ date, data=activity_noNA, FUN=sum, na.rm=TRUE)</code></pre>
 <p>A histogram of the number of steps taken each day with imputed data is shown below</p>
-<pre class="r"><code>hist(mean_5min_intervals_noNA)</code></pre>
+<pre class="r"><code>hist(mean_5min_intervals_noNA$steps, xlab = &quot;Total steps taken&quot;)</code></pre>
 <p><img src="figure/unnamed-chunk-5-1.png" /><!-- --></p>
-<p>There is a great change in the distribution of the steps. The imputed data displays a strong right skew while the data with NAs is almost normally distributed.</p>
-<p>The mean number of total steps per day is 37.3825996 while the median is 34.5419803</p>
+<p>There is a slight change in that there are higher counts around the center of the histogram.</p>
+<p>The mean number of total steps per day is 10766 while the median is 10766</p>
 </div>
 <div id="are-there-differences-in-activity-patterns-between-weekdays-and-weekends" class="section level3">
 <h3>Are there differences in activity patterns between weekdays and weekends?</h3>
@@ -177,26 +190,30 @@ mean_5min_intervals_noNA &lt;- tapply(X=activity_noNA$steps, INDEX = activity_no
 
 activity$wkday &lt;- as.factor(activity$wkday)
 
-wkdays &lt;- which(activity$wkday == &quot;weekday&quot;)
-wkends &lt;- which(activity$wkday == &quot;weekend&quot;)
+#wkdays &lt;- which(activity$wkday == &quot;weekday&quot;)
+#wkends &lt;- which(activity$wkday == &quot;weekend&quot;)
 
+#weekday_means &lt;- tapply(X=activity[wkdays,]$steps, INDEX = activity[wkdays,]$interval, FUN=mean, na.rm=TRUE)
 
-wkdays &lt;- which(activity$wkday == &quot;weekday&quot;)
-wkends &lt;- which(activity$wkday == &quot;weekend&quot;)
+#weekend_means &lt;- tapply(X=activity[wkends,]$steps, INDEX = activity[wkends,]$interval, FUN=mean, na.rm=TRUE)
 
-weekday_means &lt;- tapply(X=activity[wkdays,]$steps, INDEX = activity[wkdays,]$interval, FUN=mean, na.rm=TRUE)
+#par(mfrow=c(1,2))
 
-weekend_means &lt;- tapply(X=activity[wkends,]$steps, INDEX = activity[wkends,]$interval, FUN=mean, na.rm=TRUE)
+#rng &lt;- range(weekday_means, weekend_means)
 
-par(mfrow=c(1,2))
+#plot(seq(0, 1435, by = 5), weekday_means, type=&quot;l&quot;, ylim=rng, xlab = &quot;5 min intervals&quot;, ylab = &quot;Mean steps&quot;, sub = &quot;weekday&quot;)
+#
+#plot(seq(0, 1435, by = 5), weekend_means, type=&quot;l&quot;, ylim=rng, xlab = &quot;5 min intervals&quot;, ylab = &quot;Mean steps&quot;, sub = &quot;weekend&quot;)
+#
+#title(main=&quot;Average steps per interval&quot;, outer = TRUE)
 
-rng &lt;- range(weekday_means, weekend_means)
+par(mfrow=c(1,1))
 
-plot(seq(0, 1435, by = 5), weekday_means, type=&quot;l&quot;, ylim=rng, xlab = &quot;5 min intervals&quot;, ylab = &quot;Mean steps&quot;, sub = &quot;weekday&quot;)
+#means &lt;- aggregate(activity$steps, by=list(activity$wkday, activity$interval), mean, na.rm=TRUE)
 
-plot(seq(0, 1435, by = 5), weekend_means, type=&quot;l&quot;, ylim=rng, xlab = &quot;5 min intervals&quot;, ylab = &quot;Mean steps&quot;, sub = &quot;weekend&quot;)
+means &lt;- aggregate(steps ~ interval + wkday, data = activity, mean, na.rm=TRUE)
 
-title(main=&quot;Average steps per interval&quot;, outer = TRUE)</code></pre>
+lattice::xyplot(steps ~ interval | as.factor(means$wkday), data = means, type=&quot;l&quot;)</code></pre>
 <p><img src="figure/unnamed-chunk-6-1.png" /><!-- --></p>
 <p>There are differences between weekday and weekend activity. There is a slower start to activity on the weekend which culminates in higher volumes in the middle of the day than weekdays. Weekdays however have a higher maximum number of steps early in the day.</p>
 </div>
